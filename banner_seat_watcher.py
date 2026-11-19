@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-"""
-KU Banner seat watcher (Khalifa University) — with live dashboard data
----------------------------------------------------------------------
-Checks seat counts for the CRNs below every few minutes and sends a phone
-push notification (via the ntfy app) when someone drops and a seat frees up.
-No login needed: it reads the same public "Browse Classes" data you see.
 
-On GitHub Actions it also publishes the latest numbers to a "data" branch,
-which the dashboard page (index.html) reads to show live status.
-
-Run on a computer:
-  pip install requests
-  python banner_seat_watcher.py --test     # test notification
-  python banner_seat_watcher.py            # start watching
-"""
 
 import os
 import re
