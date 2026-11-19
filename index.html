@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Seat Watch</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:#121922; --card2:#18212c; --line:#243041;
+    --text:#e9eef5; --muted:#8996a5; --green:#3ddc84; --red:#ff5d62;
+    --amber:#ffb22e; --blue:#5aa9ff;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:max(18px, env(safe-area-inset-top)) 16px 40px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  h1{font-size:20px;margin:0;letter-spacing:-.01em}
+  h1 small{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.02em}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;
+    background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);position:relative}
+  .live .dot{background:var(--green)}
+  .live .dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;
+    border:2px solid var(--green);animation:pulse 1.8s ease-out infinite}
+  .delayed .dot{background:var(--amber)} .offline .dot{background:var(--red)}
+  @keyframes pulse{from{transform:scale(.5);opacity:.9}to{transform:scale(1.6);opacity:0}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px}
+  .course{position:relative;overflow:hidden}
+  .course.open{border-color:var(--green);box-shadow:0 0 0 1px var(--green), 0 0 40px -10px var(--green)}
+  .ctitle{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .cname{font-size:18px;font-weight:650;margin:2px 0 14px}
+  .row{display:flex;align-items:center;gap:18px}
+  .big{font-size:64px;font-weight:750;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .open .big{color:var(--green)} .full .big{color:var(--text)}
+  .biglabel{font-size:13px;color:var(--muted);margin-top:4px}
+  .state{display:inline-block;font-size:12px;font-weight:750;letter-spacing:.06em;
+    padding:4px 10px;border-radius:8px;margin-bottom:8px}
+  .full .state{background:rgba(255,93,98,.14);color:var(--red)}
+  .open .state{background:rgba(61,220,132,.16);color:var(--green)}
+  .bar{height:10px;background:var(--card2);border-radius:99px;overflow:hidden;margin:6px 0 4px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),#8a7dff);border-radius:99px;transition:width .6s}
+  .open .bar i{background:linear-gradient(90deg,var(--green),#9be15d)}
+  .meta{font-size:13px;color:var(--muted)}
+  .meta b{color:var(--text);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .chip{font-size:12px;padding:4px 9px;border-radius:8px;background:var(--card2);color:var(--muted);border:1px solid var(--line)}
+  .btn{appearance:none;border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:650;cursor:pointer;
+    background:var(--card2);color:var(--text);border:1px solid var(--line)}
+  .btn.primary{background:var(--green);color:#06210f;border-color:var(--green)}
+  .btn.danger{background:var(--red);color:#2a0507;border-color:var(--red)}
+  .reg{display:none;margin-top:14px;width:100%;text-align:center;text-decoration:none}
+  .open .reg{display:block}
+
+  .ring{width:84px;height:84px;flex:none;margin-left:auto;position:relative}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .t{position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+    font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .ring .t small{display:block;font-size:8.5px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .stat .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+  .stat .k{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.03em}
+
+  .sect{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .sect h2{font-size:15px;margin:0}
+  .seg{display:flex;background:var(--card2);border-radius:10px;padding:3px;border:1px solid var(--line)}
+  .seg button{appearance:none;border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:650;
+    padding:5px 10px;border-radius:8px;cursor:pointer}
+  .seg button.on{background:var(--line);color:var(--text)}
+  svg.chart{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}
+  .legend span::before{content:"";display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;background:var(--blue)}
+  .legend .cap::before{background:none;border-top:2px dashed var(--muted);height:0}
+  .legend .ev::before{width:8px;height:8px;border-radius:50%;background:var(--green)}
+
+  .log{list-style:none;margin:0;padding:0;max-height:340px;overflow:auto}
+  .log li{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+  .log li:first-child{border-top:0}
+  .log time{color:var(--muted);font-family:var(--mono);font-size:12.5px;min-width:96px;padding-top:1px}
+  .up{color:var(--green);font-weight:650} .down{color:var(--red);font-weight:650}
+  .empty{color:var(--muted);font-size:14px;padding:6px 0}
+
+  .alarm{display:flex;align-items:center;gap:14px}
+  .alarm p{margin:0;font-size:13px;color:var(--muted)}
+  .alarm .btn{flex:none}
+  #ringing{display:none;position:fixed;inset:0;background:rgba(5,30,15,.94);z-index:10;
+    flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+  #ringing.show{display:flex;animation:flash 1s steps(2) infinite}
+  @keyframes flash{50%{background:rgba(10,70,35,.96)}}
+  #ringing h2{font-size:34px;margin:0 0 8px} #ringing p{color:#bfe9cf;margin:0 0 26px;font-size:16px}
+  #ringing .btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+  .note{font-size:12.5px;color:var(--muted);text-align:center;margin-top:18px}
+  .err{background:rgba(255,93,98,.1);border-color:rgba(255,93,98,.4);color:#ffc9cb;font-size:14px}
+  @media (max-width:420px){ .big{font-size:54px} .grid .v{font-size:17px} .log time{min-width:80px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Seat Watch<small id="term">KU Banner</small></h1>
+    <div id="live" class="pill offline"><span class="dot"></span><span id="liveText">Connecting…</span></div>
+  </header>
+
+  <div id="error" class="card err" style="display:none"></div>
+  <div id="courses"></div>
+
+  <div class="grid">
+    <div class="stat"><div class="v" id="sLast">–</div><div class="k">LAST CHECK</div></div>
+    <div class="stat"><div class="v" id="sChecks">–</div><div class="k">TOTAL CHECKS</div></div>
+    <div class="stat"><div class="v" id="sDrops">–</div><div class="k">SEAT CHANGES (24H)</div></div>
+  </div>
+
+  <div class="card">
+    <div class="sect">
+      <h2>Enrollment over time</h2>
+      <div class="seg" id="range">
+        <button data-h="6">6h</button><button data-h="24" class="on">24h</button><button data-h="72">3d</button>
+      </div>
+    </div>
+    <div id="chart"></div>
+    <div class="legend"><span>Enrolled</span><span class="cap">Capacity</span><span class="ev">Seat change</span></div>
+  </div>
+
+  <div class="card">
+    <div class="sect"><h2>Activity</h2></div>
+    <ul class="log" id="log"></ul>
+  </div>
+
+  <div class="card alarm">
+    <div>
+      <div style="font-weight:650;margin-bottom:2px">Alarm on this device</div>
+      <p id="alarmText">Keep this page open (e.g. on your iPad) and it will ring loudly when a seat opens.</p>
+    </div>
+    <button class="btn" id="armBtn">Arm alarm</button>
+  </div>
+
+  <div class="note" id="note">Refreshes automatically</div>
+</div>
+
+<div id="ringing">
+  <h2>🚨 Seat open!</h2>
+  <p id="ringText"></p>
+  <div class="btns">
+    <a class="btn primary" id="ringReg" target="_blank" rel="noopener">Register now</a>
+    <button class="btn" id="stopBtn">Stop alarm</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const POLL_MS = 75000;               // GitHub allows ~60 unauthenticated reads/hour
+  const params = new URLSearchParams(location.search);
+  const $ = id => document.getElementById(id);
+  let data = null, hours = 24, armed = false, audio = null, beepTimer = null, wakeLock = null;
+  let lastFetchOk = 0;
+  const acked = new Set();
+
+  // ---------- where to read data from ----------
+  function repo() {
+    if (params.get("repo")) return params.get("repo");
+    const h = location.hostname;
+    if (h.endsWith(".github.io")) {
+      const owner = h.split(".")[0];
+      const seg = location.pathname.split("/").filter(Boolean)[0];
+      return `${owner}/${seg && !seg.endsWith(".html") ? seg : h}`;
+    }
+    return null;
+  }
+
+  async function fetchStatus() {
+    if (params.has("demo")) return demoData();
+    const r = repo();
+    if (!r) throw new Error("Open this page from your GitHub Pages link (…github.io/your-repo/).");
+    const tries = [
+      [`https://api.github.com/repos/${r}/contents/status.json?ref=data`,
+       {headers:{Accept:"application/vnd.github.raw+json"}, cache:"no-store"}],
+      [`https://raw.githubusercontent.com/${r}/data/status.json?t=${Date.now()}`, {cache:"no-store"}],
+    ];
+    let last;
+    for (const [url, opt] of tries) {
+      try {
+        const res = await fetch(url, opt);
+        if (res.ok) return await res.json();
+        last = new Error(res.status === 404
+          ? "No data yet. Start the watcher (Actions → KU seat watcher → Run workflow) and wait ~1 minute."
+          : `GitHub returned ${res.status}.`);
+      } catch (e) { last = e; }
+    }
+    throw last;
+  }
+
+  // ---------- helpers ----------
+  const t = iso => iso ? new Date(iso).getTime() : 0;
+  const fmtTime = ms => new Date(ms).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  const fmtDay = ms => {
+    const d = new Date(ms), today = new Date();
+    const same = d.toDateString() === today.toDateString();
+    return same ? fmtTime(ms) : d.toLocaleDateString([], {weekday:"short"}) + " " + fmtTime(ms);
+  };
+  const ago = ms => {
+    const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    return `${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m ago`;
+  };
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  // ---------- rendering ----------
+  function render() {
+    if (!data) return;
+    $("term").textContent = `KU Banner · ${data.termName || data.term || ""}`;
+    const box = $("courses");
+    const crns = Object.keys(data.courses || {});
+    box.innerHTML = crns.map(crn => {
+      const c = data.courses[crn];
+      const open = (c.avail ?? 0) > 0;
+      const pct = c.cap ? Math.min(100, 100 * c.actual / c.cap) : 0;
+      const linked = (c.linked || []).map(l => `<span class="chip">Shared with ${esc(l.course)} · ${esc(l.crn)}</span>`).join("");
+      return `<div class="card course ${open ? "open" : "full"}" data-crn="${crn}">
+        <div class="ctitle">CRN ${crn}</div>
+        <div class="cname">${esc(c.short || c.name)}${c.title ? " · " + esc(c.title) : ""}</div>
+        <div class="row">
+          <div>
+            <span class="state">${open ? "SEAT OPEN" : "FULL"}</span>
+            <div class="big">${Math.max(0, c.avail ?? 0)}</div>
+            <div class="biglabel">seat${(c.avail ?? 0) === 1 ? "" : "s"} open</div>
+          </div>
+          <div class="ring" data-ring>
+            <svg viewBox="0 0 76 76" width="84" height="84">
+              <circle cx="38" cy="38" r="33" fill="none" stroke="var(--card2)" stroke-width="6"/>
+              <circle cx="38" cy="38" r="33" fill="none" stroke="var(--blue)" stroke-width="6"
+                stroke-linecap="round" stroke-dasharray="207.3" stroke-dashoffset="207.3" data-arc/>
+            </svg>
+            <div class="t"><div><span data-count>–</span><small>NEXT CHECK</small></div></div>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <div class="bar"><i style="width:${pct}%"></i></div>
+          <div class="meta"><b>${c.actual ?? "–"}</b> of <b>${c.cap ?? "–"}</b> enrolled${c.linked && c.linked.length ? " (all linked sections)" : ""}
+            ${c.lastChange ? ` · last change ${fmtDay(t(c.lastChange))}` : ""}</div>
+        </div>
+        ${linked ? `<div class="chips">${linked}</div>` : ""}
+        <a class="btn primary reg" href="${esc(data.registerUrl || "#")}" target="_blank" rel="noopener">Register now →</a>
+      </div>`;
+    }).join("") || `<div class="card empty">No courses in the data yet.</div>`;
+
+    // stats
+    $("sChecks").textContent = (data.checksTotal ?? 0).toLocaleString();
+    const dayAgo = Date.now()/1000 - 86400;
+    $("sDrops").textContent = (data.events || []).filter(e => e.t >= dayAgo).length;
+
+    renderChart();
+    renderLog();
+    tick();
+    checkAlarm();
+  }
+
+  function renderChart() {
+    const W = 400, H = 170, P = {l:26, r:8, t:10, b:22};
+    const now = Date.now()/1000, from = now - hours*3600;
+    const crn = Object.keys(data.courses || {})[0];
+    const c = crn && data.courses[crn];
+    const pts = (c?.history || []).filter(h => h[0] >= from);
+    if (!pts.length) { $("chart").innerHTML = `<div class="empty">No checks in this time range yet.</div>`; return; }
+    const cap = Math.max(...pts.map(p => p[3] || 0), ...pts.map(p => p[2] || 0), 1);
+    const lo = Math.max(0, Math.min(...pts.map(p => p[2])) - Math.ceil(cap*0.15));
+    const x = s => P.l + (s - from) / (now - from) * (W - P.l - P.r);
+    const y = v => P.t + (1 - (v - lo) / (cap - lo || 1)) * (H - P.t - P.b);
+    let d = `M${x(pts[0][0])},${y(pts[0][2])}`;
+    for (let i = 1; i < pts.length; i++) {
+      // break the line across gaps longer than 20 min (between runs)
+      if (pts[i][0] - pts[i-1][0] > 1200) d += ` M${x(pts[i][0])},${y(pts[i][2])}`;
+      else d += ` H${x(pts[i][0])} V${y(pts[i][2])}`;
+    }
+    const last = pts[pts.length-1];
+    d += ` H${x(Math.min(now, last[0] + (data.interval || 180)))}`;
+    const ticks = [];
+    const step = hours <= 6 ? 2*3600 : hours <= 24 ? 6*3600 : 24*3600;
+    for (let s = Math.ceil(from/step)*step; s < now; s += step)
+      ticks.push(`<line x1="${x(s)}" x2="${x(s)}" y1="${P.t}" y2="${H-P.b}" stroke="var(--line)"/>
+        <text x="${x(s)}" y="${H-6}" fill="var(--muted)" font-size="10.5" text-anchor="middle">${hours > 24 ? new Date(s*1000).toLocaleDateString([], {weekday:"short"}) : fmtTime(s*1000)}</text>`);
+    const yl = [lo, Math.round((lo+cap)/2), cap].map(v =>
+      `<text x="${P.l-8}" y="${y(v)+4}" fill="var(--muted)" font-size="10.5" text-anchor="end">${v}</text>`).join("");
+    const evs = (data.events || []).filter(e => e.crn === crn && e.t >= from && e.enrolledTo != null)
+      .map(e => `<circle cx="${x(e.t)}" cy="${y(e.enrolledTo)}" r="3.5" fill="${e.to > e.from ? "var(--green)" : "var(--red)"}" stroke="var(--card)" stroke-width="2"/>`).join("");
+    $("chart").innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Enrollment chart">
+      ${ticks.join("")}
+      <line x1="${P.l}" x2="${W-P.r}" y1="${y(cap)}" y2="${y(cap)}" stroke="var(--muted)" stroke-dasharray="5 5"/>
+      ${yl}
+      <path d="${d}" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>
+      ${evs}
+    </svg>`;
+  }
+
+  function renderLog() {
+    const evs = [...(data.events || [])].reverse().slice(0, 60);
+    $("log").innerHTML = evs.length ? evs.map(e => {
+      const opened = e.to > e.from;
+      const enr = e.enrolledFrom != null ? ` <span class="meta">(enrolled ${e.enrolledFrom} → ${e.enrolledTo})</span>` : "";
+      const msg = e.to !== e.from
+        ? `<span class="${opened ? "up" : "down"}">${opened ? "▲ Seat opened" : "▼ Seat taken"}</span> ${esc(e.short)}: ${e.from} → ${e.to} open`
+        : `<span class="${e.enrolledTo < e.enrolledFrom ? "up" : "down"}">${e.enrolledTo < e.enrolledFrom ? "▲ Someone dropped" : "▼ Someone joined"}</span> ${esc(e.short)}`;
+      return `<li><time>${fmtDay(e.t*1000)}</time><div>${msg}${enr}</div></li>`;
+    }).join("") : `<li class="empty">No changes yet — the class has stayed the same since watching started.</li>`;
+  }
+
+  // live status + countdown, every second
+  function tick() {
+    if (!data) return;
+    const upd = t(data.updated), now = Date.now();
+    const interval = (data.interval || 180) * 1000;
+    const age = now - upd;
+    const pill = $("live"), txt = $("liveText");
+    let cls, label;
+    if (!upd) { cls = "offline"; label = "Waiting for first check"; }
+    else if (age <= interval + 150000) { cls = "live"; label = "Live"; }
+    else if (age <= 20*60000) { cls = "delayed"; label = "Restarting soon"; }
+    else { cls = "offline"; label = "Not running"; }
+    pill.className = "pill " + cls; txt.textContent = label;
+    $("sLast").textContent = upd ? ago(upd) : "–";
+
+    const next = upd + interval + 15000;        // script waits interval + 0–30s
+    const left = Math.round((next - now) / 1000);
+    document.querySelectorAll("[data-ring]").forEach(r => {
+      const arc = r.querySelector("[data-arc]"), cnt = r.querySelector("[data-count]");
+      if (cls !== "live") { cnt.textContent = "—"; arc.style.strokeDashoffset = 207.3; return; }
+      if (left <= 0) { cnt.textContent = "now"; arc.style.strokeDashoffset = 0; return; }
+      cnt.textContent = `${Math.floor(left/60)}:${String(left%60).padStart(2,"0")}`;
+      arc.style.strokeDashoffset = 207.3 * Math.min(1, left / ((interval + 15000)/1000));
+    });
+    const fetched = lastFetchOk ? `page refreshed ${ago(lastFetchOk)}` : "";
+    $("note").textContent = `Refreshes automatically every ${Math.round(POLL_MS/1000)}s · ${fetched}`;
+    if (cls === "offline" && upd) $("note").textContent += " · Check the Actions tab on GitHub";
+  }
+
+  // ---------- alarm ----------
+  function beepOnce() {
+    if (!audio) return;
+    const t0 = audio.currentTime;
+    [0, 0.22, 0.44].forEach((dt, i) => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = "square"; o.frequency.value = i === 2 ? 1320 : 990;
+      g.gain.setValueAtTime(0.0001, t0 + dt);
+      g.gain.exponentialRampToValueAtTime(0.5, t0 + dt + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.18);
+      o.connect(g).connect(audio.destination); o.start(t0 + dt); o.stop(t0 + dt + 0.2);
+    });
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+  }
+
+  async function keepAwake() {
+    try { if ("wakeLock" in navigator && armed) wakeLock = await navigator.wakeLock.request("screen"); } catch {}
+  }
+
+  $("armBtn").onclick = async () => {
+    if (armed) {
+      armed = false; stopRing(); wakeLock?.release?.(); wakeLock = null;
+      $("armBtn").textContent = "Arm alarm"; $("armBtn").className = "btn";
+      $("alarmText").textContent = "Keep this page open (e.g. on your iPad) and it will ring loudly when a seat opens.";
+      return;
+    }
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    await audio.resume();
+    armed = true; beepOnce(); keepAwake();
+    if ("Notification" in window && Notification.permission === "default") { try { await Notification.requestPermission(); } catch {} }
+    // anything already open when you arm it counts as seen
+    Object.entries(data?.courses || {}).forEach(([crn, c]) => { if (c.avail > 0) acked.add(key(crn, c)); });
+    $("armBtn").textContent = "Disarm"; $("armBtn").className = "btn primary";
+    $("alarmText").textContent = "Armed ✓ — keep this page open with the volume up. The screen will stay on.";
+  };
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { keepAwake(); refresh(); } });
+
+  const key = (crn, c) => `${crn}:${c.avail}:${c.lastChange || ""}`;
+
+  function checkAlarm() {
+    if (!armed || !data) return;
+    const hit = Object.entries(data.courses || {}).find(([crn, c]) => c.avail > 0 && !acked.has(key(crn, c)));
+    if (!hit) return;
+    const [crn, c] = hit;
+    $("ringText").textContent = `${c.short || "CRN " + crn} — ${c.avail} seat${c.avail === 1 ? "" : "s"} available. Go register!`;
+    $("ringReg").href = data.registerUrl || "#";
+    $("ringing").classList.add("show");
+    $("ringing").dataset.key = key(crn, c);
+    if (!beepTimer) { beepOnce(); beepTimer = setInterval(beepOnce, 1400); }
+    try { if (Notification.permission === "granted") new Notification("🚨 Seat open!", {body: $("ringText").textContent}); } catch {}
+  }
+  function stopRing() {
+    clearInterval(beepTimer); beepTimer = null;
+    const k = $("ringing").dataset.key; if (k) acked.add(k);
+    $("ringing").classList.remove("show");
+  }
+  $("stopBtn").onclick = stopRing;
+  $("ringReg").addEventListener("click", stopRing);
+
+  // ---------- range buttons ----------
+  $("range").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    hours = +b.dataset.h;
+    [...$("range").children].forEach(x => x.classList.toggle("on", x === b));
+    renderChart();
+  });
+
+  // ---------- loop ----------
+  async function refresh() {
+    try {
+      data = await fetchStatus();
+      lastFetchOk = Date.now();
+      $("error").style.display = "none";
+      render();
+    } catch (e) {
+      $("error").style.display = "block";
+      $("error").textContent = e.message || String(e);
+      if (!data) { $("liveText").textContent = "No data"; }
+    }
+  }
+
+  // ---------- demo data (?demo) for previewing the page ----------
+  function demoData() {
+    const now = Math.floor(Date.now()/1000), hist = [], events = [];
+    let enrolled = 36;
+    for (let s = now - 72*3600; s <= now; s += 195) {
+      const hr = new Date(s*1000).getUTCHours();
+      if (hr === 22 && (s % 3600) < 600) continue;          // small gap between runs
+      if (Math.random() < 0.006 && enrolled === 36) { enrolled = 35; events.push({t:s,crn:"20009",short:"Aerospace Engineering 225-02",from:0,to:1,enrolledFrom:36,enrolledTo:35}); }
+      else if (Math.random() < 0.08 && enrolled === 35) { enrolled = 36; events.push({t:s,crn:"20009",short:"Aerospace Engineering 225-02",from:1,to:0,enrolledFrom:35,enrolledTo:36}); }
+      hist.push([s, 36 - enrolled, enrolled, 36]);
+    }
+    const open = params.get("demo") === "open";
+    if (open) { hist.push([now, 1, 35, 36]); events.push({t:now,crn:"20009",short:"Aerospace Engineering 225-02",from:0,to:1,enrolledFrom:36,enrolledTo:35}); enrolled = 35; }
+    const lastAvail = 36 - enrolled;
+    return {
+      term:"202620", termName:"Spring 2027", interval:180, checksTotal:1342,
+      updated:new Date((now - 47)*1000).toISOString(), registerUrl:"#",
+      courses:{ "20009":{ name:"Aerospace Engineering 225-02 Mechanics of Solids (CRN 20009)",
+        short:"Aerospace Engineering 225-02", title:"Mechanics of Solids",
+        avail:lastAvail, actual:enrolled, cap:36,
+        lastChange: events.length ? new Date(events[events.length-1].t*1000).toISOString() : null,
+        linked:[{crn:"20066",course:"Civil Engineering 225"},{crn:"20155",course:"Mechanical Engineering 325"}],
+        history:hist } },
+      events
+    };
+  }
+
+  refresh();
+  setInterval(refresh, POLL_MS);
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
